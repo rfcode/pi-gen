@@ -10,7 +10,7 @@ export KEYBOARD_LAYOUT="English (US)"
 export LOCALE_DEFAULT="en_US.UTF-8"
 export TIMEZONE_DEFAULT="America/Chicago"
 
-export STAGE_LIST="stage0 stage1 stage2 stage3 stage4 stage6"
+export STAGE_LIST="stage0 stage1 stage2 stage3 stage4 stage6 stage7"
 
 # Don't remove docker container after build
 export PRESERVE_CONTAINER=1

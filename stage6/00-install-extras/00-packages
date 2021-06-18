@@ -2,7 +2,6 @@ vim
 screen
 byacc
 flex
-openjdk-8-jdk
 cmake
 libssl-dev 
 libcurl4-openssl-dev 
@@ -19,3 +18,5 @@ libcairo2-dev
 meld
 python-gi-dev
 libatlas-base-dev
+exfat-fuse
+exfat-utils
