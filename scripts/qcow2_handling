@@ -9,11 +9,12 @@ export NBD_DEV
 export MAP_BOOT_DEV
 export MAP_DATA_DEV
 export MAP_ROOT_DEV
+export MAP_ROOT2_DEV
 
 # set in build.sh
 # should be fairly enough for the beginning
 # overwrite here by uncommenting following lines
-BASE_QCOW2_SIZE=13G
+BASE_QCOW2_SIZE=26G
 
 # find and initialize free block device nodes
 init_nbd() {
@@ -25,7 +26,8 @@ init_nbd() {
 			NBD_DEV=/dev/$(basename $x)
 			MAP_BOOT_DEV=/dev/mapper/$(basename $x)p1
 			MAP_ROOT_DEV=/dev/mapper/$(basename $x)p2
-			MAP_DATA_DEV=/dev/mapper/$(basename $x)p3
+			MAP_ROOT2_DEV=/dev/mapper/$(basename $x)p3
+			MAP_DATA_DEV=/dev/mapper/$(basename $x)p4
 			break
 		fi
 	done
@@ -52,6 +54,7 @@ disconnect_blkdev() {
 	MAP_BOOT_DEV=
 	MAP_DATA_DEV=
 	MAP_ROOT_DEV=
+	MAP_ROOT2_DEV=
 	CURRENT_IMAGE=
 }
 export -f disconnect_blkdev
@@ -63,6 +66,7 @@ mount_qimage() {
 	mkdir -p "${ROOTFS_DIR}/boot"
 	mount -v -t vfat $MAP_BOOT_DEV "$2/boot"
 	mkdir -p "${ROOTFS_DIR}/data"
+    chmod ugo+w "${ROOTFS_DIR}/data"
 	mount -v -t ext4 $MAP_DATA_DEV "$2/data"
 	CURRENT_MOUNTPOINT="$2"
 }
@@ -110,8 +114,9 @@ load_qimage() {
 				sync
 				sfdisk $NBD_DEV << EOF
 4MiB,252MiB,c,*
-256MiB,12GiB,83
-12544MiB,256MiB,83;
+256MiB,12544MiB,83
+12800MiB,12544MiB,83
+25344MiB,256MiB,83;
 EOF
 				sync
 				kpartx -a $NBD_DEV
@@ -204,17 +209,38 @@ function resize_qcow2() {
 	let PART_NEW_SIZE=$DATA_SIZE*$BLOCK_SIZE
 	let PART_NEW_END=$PART_START+$PART_NEW_SIZE
 
+    #
+    # Make a redundant rootfs partition for swupdate purposes
+    #
+    let ROOT2_START=$PART_NEW_END + 1
+    let ROOT2_END=$PART_NEW_END - $PART_START + 1
+
     echo
     echo "PART_START=$PART_START"
     echo "PART_NEW_SIZE=$PART_NEW_SIZE"
 	echo "PART_NEW_END=$PART_NEW_END"
     echo
+    echo "ROOT2_START=$ROOT2_START"
+    echo "ROOT2_END=$ROOT2_END"
+    echo
 
+    #
+    # Primary ROOTFS
+    #
     echo "parted -s $NBD_DEV rm 2"
 	ACT1=`parted -s "$NBD_DEV" rm 2`
 
     echo "parted -s $NBD_DEV unit B mkpart primary $PART_START $PART_NEW_END"
 	ACT2=`parted -s "$NBD_DEV" unit B mkpart primary $PART_START $PART_NEW_END`
+
+    #
+    # Secondary ROOTFS (for swupdate)
+    #
+    echo "parted -s $NBD_DEV rm 3"
+	ACT1=`parted -s "$NBD_DEV" rm 3`
+
+    echo "parted -s $NBD_DEV unit B mkpart primary $ROOT2_START $ROOT2_END"
+	ACT2=`parted -s "$NBD_DEV" unit B mkpart primary $ROOT2_START $ROOT2_END`
 
     echo "parted -s -m $NBD_DEV unit B print free"
 	NEW_IMG_SIZE=`parted -s -m "$NBD_DEV" unit B print free | tail -1 | awk -F: ' { print substr($2,1,length($2)-1) } '`
@@ -260,7 +286,7 @@ function make_bootable_image() {
 	ROOT_PARTUUID="${IMGID}-02"
 	echo "Root: $ROOT_PARTUUID"
 
-	DATA_PARTUUID="${IMGID}-03"
+	DATA_PARTUUID="${IMGID}-04"
 	echo "Data: $DATA_PARTUUID"
 
 	echo "Mount image"

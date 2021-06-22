@@ -31,19 +31,36 @@ rm $ROOTFS_DIR/etc/init.d/resize2fs_once
 #
 # Make an array of all the files in the extra rootoverlay files
 #
-readarray -t extra_files < <(find Sentry/extra-rootoverlay-files/ -type f)
+EXTRA_FILES_DIR="Sentry/pi-gen/extra-rootoverlay-files/"
+readarray -t extra_files < <(find $EXTRA_FILES_DIR -type f)
 
 #
 # Install each file
 #
 for file in "${extra_files[@]}"
 do
-    dest_dir="$(dirname `echo $file | cut -d'/' -f3-`)"
+    dest_dir="$(dirname `echo $file | cut -d'/' -f4-`)"
     mkdir -p $ROOTFS_DIR/$dest_dir
     echo "install -m 744 $file --target-directory=$ROOTFS_DIR/$dest_dir"
     install -m 744 $file --target-directory=$ROOTFS_DIR/$dest_dir
 done
 
+#
+# Make some directories 
+#
+mkdir -p $ROOTFS_DIR/data/videos
+mkdir -p $ROOTFS_DIR/data/log
+
+mkdir -p $ROOTFS_DIR/mnt/usb
+
+#
+# Enable services to run at bootup
+#
 on_chroot << EOF
 systemctl enable resize2fs_data.service
+systemctl enable sentry-control.service
+chown -R sentry:sentry /data
+chown -R sentry:sentry /home/sentry
 EOF
+
+
