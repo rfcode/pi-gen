@@ -7,14 +7,12 @@ export CURRENT_MOUNTPOINT
 
 export NBD_DEV
 export MAP_BOOT_DEV
-export MAP_DATA_DEV
 export MAP_ROOT_DEV
-export MAP_ROOT2_DEV
 
 # set in build.sh
 # should be fairly enough for the beginning
 # overwrite here by uncommenting following lines
-BASE_QCOW2_SIZE=26G
+#BASE_QCOW2_SIZE=13G
 
 # find and initialize free block device nodes
 init_nbd() {
@@ -26,8 +24,6 @@ init_nbd() {
 			NBD_DEV=/dev/$(basename $x)
 			MAP_BOOT_DEV=/dev/mapper/$(basename $x)p1
 			MAP_ROOT_DEV=/dev/mapper/$(basename $x)p2
-			MAP_ROOT2_DEV=/dev/mapper/$(basename $x)p3
-			MAP_DATA_DEV=/dev/mapper/$(basename $x)p4
 			break
 		fi
 	done
@@ -52,9 +48,7 @@ disconnect_blkdev() {
 	qemu-nbd -d $NBD_DEV
 	NBD_DEV=
 	MAP_BOOT_DEV=
-	MAP_DATA_DEV=
 	MAP_ROOT_DEV=
-	MAP_ROOT2_DEV=
 	CURRENT_IMAGE=
 }
 export -f disconnect_blkdev
@@ -65,9 +59,6 @@ mount_qimage() {
 	mount -v -t ext4 $MAP_ROOT_DEV "$2"
 	mkdir -p "${ROOTFS_DIR}/boot"
 	mount -v -t vfat $MAP_BOOT_DEV "$2/boot"
-	mkdir -p "${ROOTFS_DIR}/data"
-    chmod ugo+w "${ROOTFS_DIR}/data"
-	mount -v -t ext4 $MAP_DATA_DEV "$2/data"
 	CURRENT_MOUNTPOINT="$2"
 }
 export -f mount_qimage
@@ -113,10 +104,8 @@ load_qimage() {
 				qemu-nbd --discard=unmap -c $NBD_DEV image-${STAGE}.qcow2
 				sync
 				sfdisk $NBD_DEV << EOF
-4MiB,252MiB,c,*
-256MiB,12544MiB,83
-12800MiB,12544MiB,83
-25344MiB,256MiB,83;
+4MiB,250MiB,c,*
+254MiB,,83;
 EOF
 				sync
 				kpartx -a $NBD_DEV
@@ -124,8 +113,6 @@ EOF
 				mkdosfs -n boot -F 32 -v $MAP_BOOT_DEV
                 echo "mkfs rootfs"
 				mkfs.ext4 -L rootfs -O "^huge_file,^metadata_csum,^64bit" $MAP_ROOT_DEV
-                echo "mkfs data"
-				mkfs.ext4 -L data $MAP_DATA_DEV
 				sync
 			else
 				if [ ! -f "${WORK_DIR}/image-${PREV_STAGE}.qcow2" ]; then
@@ -144,8 +131,6 @@ EOF
 			mount -v -t ext4 $MAP_ROOT_DEV "${ROOTFS_DIR}"
 			mkdir -p "${ROOTFS_DIR}/boot"
 			mount -v -t vfat $MAP_BOOT_DEV "${ROOTFS_DIR}/boot"
-			mkdir -p "${ROOTFS_DIR}/data"
-			mount -v -t ext4 $MAP_DATA_DEV "${ROOTFS_DIR}/data"
 			CURRENT_IMAGE=${WORK_DIR}/image-${STAGE}.qcow2
 			CURRENT_MOUNTPOINT=${ROOTFS_DIR}
 			popd > /dev/null
@@ -209,38 +194,17 @@ function resize_qcow2() {
 	let PART_NEW_SIZE=$DATA_SIZE*$BLOCK_SIZE
 	let PART_NEW_END=$PART_START+$PART_NEW_SIZE
 
-    #
-    # Make a redundant rootfs partition for swupdate purposes
-    #
-    let ROOT2_START=$PART_NEW_END + 1
-    let ROOT2_END=$PART_NEW_END - $PART_START + 1
-
     echo
     echo "PART_START=$PART_START"
     echo "PART_NEW_SIZE=$PART_NEW_SIZE"
 	echo "PART_NEW_END=$PART_NEW_END"
     echo
-    echo "ROOT2_START=$ROOT2_START"
-    echo "ROOT2_END=$ROOT2_END"
-    echo
 
-    #
-    # Primary ROOTFS
-    #
     echo "parted -s $NBD_DEV rm 2"
 	ACT1=`parted -s "$NBD_DEV" rm 2`
 
     echo "parted -s $NBD_DEV unit B mkpart primary $PART_START $PART_NEW_END"
 	ACT2=`parted -s "$NBD_DEV" unit B mkpart primary $PART_START $PART_NEW_END`
-
-    #
-    # Secondary ROOTFS (for swupdate)
-    #
-    echo "parted -s $NBD_DEV rm 3"
-	ACT1=`parted -s "$NBD_DEV" rm 3`
-
-    echo "parted -s $NBD_DEV unit B mkpart primary $ROOT2_START $ROOT2_END"
-	ACT2=`parted -s "$NBD_DEV" unit B mkpart primary $ROOT2_START $ROOT2_END`
 
     echo "parted -s -m $NBD_DEV unit B print free"
 	NEW_IMG_SIZE=`parted -s -m "$NBD_DEV" unit B print free | tail -1 | awk -F: ' { print substr($2,1,length($2)-1) } '`
@@ -286,19 +250,12 @@ function make_bootable_image() {
 	ROOT_PARTUUID="${IMGID}-02"
 	echo "Root: $ROOT_PARTUUID"
 
-	DATA_PARTUUID="${IMGID}-04"
-	echo "Data: $DATA_PARTUUID"
-
 	echo "Mount image"
 	MOUNTROOT=${WORK_DIR}/tmpimage
 	mkdir -p $MOUNTROOT
 
 	MOUNTPT=$MOUNTROOT
 	PARTITION=2
-	mount "${EXPORT_IMAGE}" "$MOUNTPT" -o loop,offset=$[ `/sbin/sfdisk -d "${EXPORT_IMAGE}" | grep "start=" | head -n $PARTITION | tail -n1 | sed 's/.*start=[ ]*//' | sed 's/,.*//'` * 512 ],sizelimit=$[ `/sbin/sfdisk -d "${EXPORT_IMAGE}" | grep "start=" | head -n $PARTITION | tail -n1 | sed 's/.*size=[ ]*//' | sed 's/,.*//'` * 512 ] || exit 1
-
-	MOUNTPT=$MOUNTROOT/data
-	PARTITION=3
 	mount "${EXPORT_IMAGE}" "$MOUNTPT" -o loop,offset=$[ `/sbin/sfdisk -d "${EXPORT_IMAGE}" | grep "start=" | head -n $PARTITION | tail -n1 | sed 's/.*start=[ ]*//' | sed 's/,.*//'` * 512 ],sizelimit=$[ `/sbin/sfdisk -d "${EXPORT_IMAGE}" | grep "start=" | head -n $PARTITION | tail -n1 | sed 's/.*size=[ ]*//' | sed 's/,.*//'` * 512 ] || exit 1
 
 	MOUNTPT=$MOUNTROOT/boot
@@ -315,14 +272,12 @@ function make_bootable_image() {
 		echo "Set UUIDs to make it bootable"
 		sed -i "s/BOOTDEV/PARTUUID=${BOOT_PARTUUID}/" "${MOUNTROOT}/etc/fstab"
 		sed -i "s/ROOTDEV/PARTUUID=${ROOT_PARTUUID}/" "${MOUNTROOT}/etc/fstab"
-		sed -i "s/DATADEV/PARTUUID=${DATA_PARTUUID}/" "${MOUNTROOT}/etc/fstab"
 		sed -i "s/ROOTDEV/PARTUUID=${ROOT_PARTUUID}/" "${MOUNTROOT}/boot/cmdline.txt"
 	fi
 
 	echo "Umount image"
 	sync
 	umount "${MOUNTROOT}/boot" || exit 1
-	umount "${MOUNTROOT}/data" || exit 1
 	umount "${MOUNTROOT}" || exit 1
 
 	echo "Remove qcow2 export image"

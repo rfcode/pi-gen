@@ -46,18 +46,17 @@ do
 done
 
 #
-# Make some directories 
+# Make mount points
 #
-mkdir -p $ROOTFS_DIR/data/videos
-mkdir -p $ROOTFS_DIR/data/log
-
 mkdir -p $ROOTFS_DIR/mnt/usb
+mkdir -p $ROOTFS_DIR/data
+
 
 #
 # Enable services to run at bootup
 #
 on_chroot << EOF
-systemctl enable resize2fs_data.service
+systemctl enable sentry-fixup.service
 systemctl enable sentry-control.service
 chown -R sentry:sentry /data
 chown -R sentry:sentry /home/sentry

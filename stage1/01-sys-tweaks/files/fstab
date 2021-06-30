@@ -1,6 +1,8 @@
 proc            /proc           proc    defaults          0       0
 BOOTDEV  /boot           vfat    defaults          0       2
-DATADEV  /data           ext4    defaults,noatime  0       2
 
-# Doesn't really need to be here, rootfs is specified by /boot/cmdline.txt
+#
+# This doesn't need to be here, the rootfs is mounted at boot using
+# root= in /boot/cmdline.txt
+#
 #ROOTDEV  /               ext4    defaults,noatime  0       1
