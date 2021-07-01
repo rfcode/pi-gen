@@ -16,7 +16,7 @@ CMDLINE=`cat $ROOTFS_DIR/boot/cmdline.txt`
 echo "BEFORE cmdline.txt: $CMDLINE"
 
 sed -i 's|quiet ||' $ROOTFS_DIR/boot/cmdline.txt
-sed -i 's|splash ||' $ROOTFS_DIR/boot/cmdline.txt
+#sed -i 's|splash ||' $ROOTFS_DIR/boot/cmdline.txt
 sed -i 's|init=/usr/lib/raspi-config/init_resize.sh ||' $ROOTFS_DIR/boot/cmdline.txt
 
 CMDLINE=`cat $ROOTFS_DIR/boot/cmdline.txt`
@@ -57,7 +57,7 @@ mkdir -p $ROOTFS_DIR/data
 #
 on_chroot << EOF
 systemctl enable sentry-fixup.service
-systemctl enable sentry-control.service
+#systemctl enable sentry-control.service
 chown -R sentry:sentry /data
 chown -R sentry:sentry /home/sentry
 EOF

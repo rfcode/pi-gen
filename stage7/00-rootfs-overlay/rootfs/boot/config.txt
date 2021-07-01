@@ -87,3 +87,5 @@ enable_uart=1
 #### USB ####
 dtoverlay=dwc2,dr_mode=host
 
+# Extra bootup info on UART
+uart_2ndstage=1
