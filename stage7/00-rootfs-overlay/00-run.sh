@@ -1,3 +1,5 @@
+set -x
+
 #
 # Extract the large overlay tar file to the rootfs directory
 #
@@ -57,8 +59,7 @@ mkdir -p $ROOTFS_DIR/data
 #
 on_chroot << EOF
 systemctl enable sentry-fixup.service
-#systemctl enable sentry-control.service
-chown -R sentry:sentry /data
+systemctl enable sentry-control.service
 chown -R sentry:sentry /home/sentry
 EOF
 
