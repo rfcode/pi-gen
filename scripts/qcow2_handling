@@ -160,7 +160,8 @@ function resize_qcow2() {
 	fi
 
 	# ROOT_MARGIN=$((800*1024*1024))
-	ROOT_MARGIN=$((1*1024*1024))
+	# ROOT_MARGIN=$((1024*1024*1024))
+	ROOT_MARGIN=0
 	PARTED_OUT=`parted -s -m "$NBD_DEV" unit B print`
 	#PART_NO=`echo "$PARTED_OUT" | grep ext4 | awk -F: ' { print $1 } '`
 	#PART_START=`echo "$PARTED_OUT" | grep ext4 | awk -F: ' { print substr($2,1,length($2)-1) } '`
@@ -208,6 +209,7 @@ function resize_qcow2() {
 
     echo "parted -s -m $NBD_DEV unit B print free"
 	NEW_IMG_SIZE=`parted -s -m "$NBD_DEV" unit B print free | tail -1 | awk -F: ' { print substr($2,1,length($2)-1) } '`
+    echo "NEW_IMG_SIZE=$NEW_IMG_SIZE"
 }
 export -f resize_qcow2
 

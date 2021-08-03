@@ -60,10 +60,11 @@ mkdir -p $ROOTFS_DIR/data
 on_chroot << EOF
 systemctl enable sentry-fixup.service
 
+#
 # We don't enable sentry-control until after we've put the necessary files in /data for the sentry to run
 #
-#systemctl enable sentry-control.service
-#
+systemctl enable sentry-control.service
+
 chown -R sentry:sentry /home/sentry
 EOF
 

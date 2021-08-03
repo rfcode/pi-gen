@@ -1,5 +1,15 @@
 #!/bin/bash -eu
 
+set -x
+
+#
+# Move big files from deploy to a different dir
+#
+mkdir -p ../deploy_backup || true
+rsync -a deploy/* ../deploy_backup || true
+rm -rf deploy/* || true
+
+
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 BUILD_OPTS="$*"
@@ -115,7 +125,12 @@ else
 fi
 
 echo "copying results from deploy/"
+# Delete older than an hour images 
+${DOCKER} exec "${CONTAINER_NAME}" find /pi-gen/deploy/ -mmin +60 -delete || true
+${DOCKER} exec "${CONTAINER_NAME}" find /pi-gen/deploy/ -empty -delete || true
+
 ${DOCKER} cp "${CONTAINER_NAME}":/pi-gen/deploy .
+
 ls -lah deploy
 
 # cleanup

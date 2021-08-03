@@ -1,8 +1,8 @@
-export IMG_NAME="sentry-pi"
+export IMG_NAME="rfcode-sentry"
 export ENABLE_SSH=1
 export FIRST_USER_NAME="sentry"
 export FIRST_USER_PASS="rfcode"
-export TARGET_HOSTNAME="sentry-pi"
+export TARGET_HOSTNAME="rfcode-sentry"
 export DEPLOY_ZIP=0
 
 export KEYBOARD_KEYMAP="us"
