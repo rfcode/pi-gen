@@ -289,6 +289,12 @@ if [[ "${PUBKEY_ONLY_SSH}" = "1" && -z "${PUBKEY_SSH_FIRST_USER}" ]]; then
 fi
 
 mkdir -p "${WORK_DIR}"
+
+#
+# Remove everything in the deploy directory.  This is desirable for running
+# docker-build.sh, but might not be what you want for building w/out docker
+#
+rm -rf ${DEPLOY_DIR}/*
 log "Begin ${BASE_DIR}"
 
 STAGE_LIST=${STAGE_LIST:-${BASE_DIR}/stage*}

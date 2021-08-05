@@ -20,3 +20,5 @@ python-gi-dev
 libatlas-base-dev
 exfat-fuse
 exfat-utils
+monit
+jq
