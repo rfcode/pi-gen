@@ -1,15 +1,41 @@
 set -x
 
 #
+# Create a tarball of the extra-rootoverlay-files to be installed alongsize the 
+# tarballs created by mkinstalltar.sh
+#
+pushd Sentry/pi-gen/
+tar cfz extra-rootoverlay-files.tgz --preserve-permissions -C extra-rootoverlay-files .
+popd
+
+#
 # Extract the large overlay tar file to the rootfs directory
 #
-tar xfz sentry-rootfs-overlay.tar.gz --preserve-permissions --directory $ROOTFS_DIR
+#tar xfz sentry-rootfs-overlay.tar.gz --preserve-permissions --directory $ROOTFS_DIR
+for tarfile in $(find Sentry/pi-gen -name "*.tgz")
+do
+    tar xfz $tarfile --preserve-permissions --directory $ROOTFS_DIR
+done
+
 
 #
 # Copy the Sentry git submodule to the default location
 #
 mkdir -p $ROOTFS_DIR/home/sentry/GIT/Sentry
 cp -R Sentry/* $ROOTFS_DIR/home/sentry/GIT/Sentry
+
+#
+# Clear some superfluous stuff (leave pyarmor-regcode-1746.txt)
+#
+pushd $ROOTFS_DIR/home/sentry/GIT/Sentry/pi-gen
+
+# Delete files made by mkinstalltar.sh
+rm -rf *.tgz
+
+# Delete all dirs
+find . -maxdepth 1 -type d | xargs rm -rf
+
+popd
 
 #
 # Fixup cmdline.txt
@@ -31,21 +57,9 @@ echo "AFTER cmdline.txt: $CMDLINE"
 rm $ROOTFS_DIR/etc/init.d/resize2fs_once
 
 #
-# Make an array of all the files in the extra rootoverlay files
+# Fix monitrc
 #
-EXTRA_FILES_DIR="Sentry/pi-gen/extra-rootoverlay-files/"
-readarray -t extra_files < <(find $EXTRA_FILES_DIR -type f)
-
-#
-# Install each file
-#
-for file in "${extra_files[@]}"
-do
-    dest_dir="$(dirname `echo $file | cut -d'/' -f4-`)"
-    mkdir -p $ROOTFS_DIR/$dest_dir
-    echo "install -m 744 $file --target-directory=$ROOTFS_DIR/$dest_dir"
-    install -m 744 $file --target-directory=$ROOTFS_DIR/$dest_dir
-done
+chmod 600 $ROOTFS_DIR/etc/monit/monitrc
 
 #
 # Make mount points
@@ -64,6 +78,19 @@ systemctl enable sentry-fixup.service
 # We don't enable sentry-control until after we've put the necessary files in /data for the sentry to run
 #
 systemctl enable sentry-control.service
+
+#
+# Disable some services we don't need
+#
+
+# Printer service
+systemctl disable cups
+
+# Bluetooth over UART
+systemctl disable hciuart
+
+# Light dm - Desktop manager
+systemctl disable lightdm
 
 chown -R sentry:sentry /home/sentry
 EOF

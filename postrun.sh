@@ -36,7 +36,16 @@ mv $IMG_DEPLOY $IMG_SDCARD
 #
 # Write manifest.json
 #
-echo -e "{\n  'rootfs' : '$IMG_ROOTFS_FILE',\n  'build_time_utc_seconds' : $IMG_UTC_SECONDS,\n  'build_time_utc' : '$IMG_UTC_STR'\n}" > $TARBALL_DIR/manifest.json
+
+MANIFEST_JSON=$(jq --null-input \
+    --arg rootfs "$IMG_ROOTFS_FILE" \
+    --arg build_time_utc_seconds "$IMG_UTC_SECONDS" \
+    --arg build_time_utc "$IMG_UTC_STR" \
+    '{ "rootfs": $rootfs, "build_time_utc_seconds": $build_time_utc_seconds, "build_time_utc" : "$build_time_utc" }' \
+)
+
+
+echo "$MANIFEST_JSON" > $TARBALL_DIR/manifest.json
 
 #
 # Read the fdisk info line for .img2 into ROOTFS_INFO_ARR
@@ -84,6 +93,7 @@ NEW_ROOTFS_END=$((ROOTFS_START+$ALPHA_RELEASE_ROOTFS_SIZE_SECTORS))
 printf "unit s\n"   > parted.cmd
 printf "print\n"    >> parted.cmd
 printf "rm 2\n"     >> parted.cmd
+printf "print\n"    >> parted.cmd
 printf "mkpart primary ext4 $ROOTFS_START $NEW_ROOTFS_END\n"     >> parted.cmd
 printf "print\n"    >> parted.cmd
  
@@ -98,5 +108,10 @@ dd if=$IMG_ROOTFS_DEPLOY of=$IMG_SDCARD seek=$ROOTFS_START status=progress
 # Change dir to TARBALL_DIR and create the tar gzipped rootfs upgrade file
 #
 tar cfz $POST_DEPLOY_DIR/$TGZ_UPGRADE_FILE -C $TARBALL_DIR .
+
+#
+# Erase the extra tarball dir and leave just the sdcard image and compress tarball
+#
+rm -rf $TARBALL_DIR
 
 echo "postrun.sh EXIT"
