@@ -38,6 +38,11 @@ find . -maxdepth 1 -type d | xargs rm -rf
 popd
 
 #
+# Remove aws directory
+#
+rm -rf $ROOTFS_DIR/home/sentry/GIT/Sentry/aws
+
+#
 # Fixup cmdline.txt
 #
 CMDLINE=`cat $ROOTFS_DIR/boot/cmdline.txt`
