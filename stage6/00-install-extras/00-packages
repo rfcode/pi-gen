@@ -22,3 +22,4 @@ exfat-fuse
 exfat-utils
 monit
 jq
+dos2unix
