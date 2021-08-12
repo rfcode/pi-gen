@@ -68,6 +68,26 @@ fi
 # Ensure the Git Hash is recorded before entering the docker container
 GIT_HASH=${GIT_HASH:-"$(git rev-parse HEAD)"}
 
+PI_GEN_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+PI_GEN_COMMIT=$(git rev-parse HEAD)
+PI_GEN_DESCRIBE=$(git describe --always --dirty)
+
+pushd stage7/00-rootfs-overlay/Sentry
+SENTRY_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+SENTRY_COMMIT=$(git rev-parse HEAD)
+SENTRY_DESCRIBE=$(git describe --always --dirty)
+popd
+
+jq --null-input \
+    --arg pi_gen_branch "$PI_GEN_BRANCH" \
+    --arg pi_gen_commit "$PI_GEN_COMMIT" \
+    --arg pi_gen_describe "$PI_GEN_DESCRIBE" \
+    --arg sentry_branch "$SENTRY_BRANCH" \
+    --arg sentry_commit "$SENTRY_COMMIT" \
+    --arg sentry_describe "$SENTRY_DESCRIBE" \
+    '{ "pi_gen_branch" : $pi_gen_branch, "pi_gen_commit" : $pi_gen_commit, "pi_gen_describe" : $pi_gen_describe, "sentry_branch" : $sentry_branch, "sentry_commit" : $sentry_commit, "sentry_describe" : $sentry_describe }' > git.json
+
+
 CONTAINER_EXISTS=$(${DOCKER} ps -a --filter name="${CONTAINER_NAME}" -q)
 CONTAINER_RUNNING=$(${DOCKER} ps --filter name="${CONTAINER_NAME}" -q)
 if [ "${CONTAINER_RUNNING}" != "" ]; then
