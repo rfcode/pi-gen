@@ -113,7 +113,7 @@ case "$(uname -m)" in
     BASE_IMAGE=debian:buster
     ;;
 esac
-${DOCKER} build --build-arg BASE_IMAGE=${BASE_IMAGE} -t pi-gen "${DIR}"
+${DOCKER} build --build-arg BASE_IMAGE=${BASE_IMAGE} -t pi-gen-sentry-dev "${DIR}"
 
 if [ "${CONTAINER_EXISTS}" != "" ]; then
 	trap 'echo "got CTRL+C... please wait 5s" && ${DOCKER} stop -t 5 ${CONTAINER_NAME}_cont' SIGINT SIGTERM
@@ -124,9 +124,9 @@ if [ "${CONTAINER_EXISTS}" != "" ]; then
 		--volume "${CONFIG_FILE}":/config:ro \
 		-e "GIT_HASH=${GIT_HASH}" \
 		--volumes-from="${CONTAINER_NAME}" --name "${CONTAINER_NAME}_cont" \
-		pi-gen \
+		pi-gen-sentry-dev \
 		bash -e -o pipefail -c "dpkg-reconfigure qemu-user-static &&
-	cd /pi-gen; ./build.sh ${BUILD_OPTS} &&
+	cd /pi-gen-sentry-dev; ./build.sh ${BUILD_OPTS} &&
 	rsync -av work/*/build.log deploy/" &
 	wait "$!"
 else
@@ -137,16 +137,16 @@ else
 		-v /lib/modules:/lib/modules \
 		--volume "${CONFIG_FILE}":/config:ro \
 		-e "GIT_HASH=${GIT_HASH}" \
-		pi-gen \
+		pi-gen-sentry-dev \
 		bash -e -o pipefail -c "dpkg-reconfigure qemu-user-static &&
-	cd /pi-gen; ./build.sh ${BUILD_OPTS} &&
+	cd /pi-gen-sentry-dev; ./build.sh ${BUILD_OPTS} &&
 	rsync -av work/*/build.log deploy/" &
 	wait "$!"
 fi
 
 echo "copying results from deploy/"
 
-${DOCKER} cp "${CONTAINER_NAME}":/pi-gen/deploy .
+${DOCKER} cp "${CONTAINER_NAME}":/pi-gen-sentry-dev/deploy .
 
 ls -lah deploy
 
