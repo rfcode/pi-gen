@@ -11,6 +11,11 @@ pipeline {
                 sh 'git submodule update --init --recursive'
 			}
 		}
+        stage("Build") {
+            steps {
+                sh './build-docker.sh'
+            }
+        }
 	}
 }
 
