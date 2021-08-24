@@ -68,6 +68,8 @@ fi
 # Ensure the Git Hash is recorded before entering the docker container
 GIT_HASH=${GIT_HASH:-"$(git rev-parse HEAD)"}
 
+BUILD_USER=$(whoami)
+BUILD_HOST=$(hostname)
 PI_GEN_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 PI_GEN_COMMIT=$(git rev-parse HEAD)
 PI_GEN_DESCRIBE=$(git describe --always --dirty)
@@ -85,7 +87,9 @@ jq --null-input \
     --arg sentry_branch "$SENTRY_BRANCH" \
     --arg sentry_commit "$SENTRY_COMMIT" \
     --arg sentry_describe "$SENTRY_DESCRIBE" \
-    '{ "pi_gen_branch" : $pi_gen_branch, "pi_gen_commit" : $pi_gen_commit, "pi_gen_describe" : $pi_gen_describe, "sentry_branch" : $sentry_branch, "sentry_commit" : $sentry_commit, "sentry_describe" : $sentry_describe }' > git.json
+    --arg build_user "$BUILD_USER" \
+    --arg build_host "$BUILD_HOST" \
+    '{ "build_user" : $build_user, "build_host" : $build_host, "pi_gen_branch" : $pi_gen_branch, "pi_gen_commit" : $pi_gen_commit, "pi_gen_describe" : $pi_gen_describe, "sentry_branch" : $sentry_branch, "sentry_commit" : $sentry_commit, "sentry_describe" : $sentry_describe }' > git.json
 
 
 CONTAINER_EXISTS=$(${DOCKER} ps -a --filter name="${CONTAINER_NAME}" -q)
