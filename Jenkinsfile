@@ -7,7 +7,7 @@ pipeline {
             steps {
                 sh 'printenv'
                 deleteDir()
-                sh 'docker rm -v pigen_work_sentry && true' 
+                sh 'docker rm -v pigen_work_sentry || true' 
                 //
                 // Using rfbuilder credentials for git, but the build logs into the jshw-02 build machine using jenkins user.
                 // The keys for rfbuider are in ~/.ssh for the jenkins user
