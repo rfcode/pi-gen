@@ -96,6 +96,7 @@ jq --null-input \
     --arg build_time_utc "$IMG_UTC_STR" \
     '{ "build_time_utc_seconds": $build_time_utc_seconds, "build_time_utc" : $build_time_utc, "build_user" : $build_user, "build_host" : $build_host, "pi_gen_branch" : $pi_gen_branch, "pi_gen_commit" : $pi_gen_commit, "pi_gen_describe" : $pi_gen_describe, "sentry_branch" : $sentry_branch, "sentry_commit" : $sentry_commit, "sentry_describe" : $sentry_describe }' > git.json
 
+cat git.json
 
 CONTAINER_EXISTS=$(${DOCKER} ps -a --filter name="${CONTAINER_NAME}" -q)
 CONTAINER_RUNNING=$(${DOCKER} ps --filter name="${CONTAINER_NAME}" -q)
