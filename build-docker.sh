@@ -80,6 +80,9 @@ SENTRY_COMMIT=$(git rev-parse HEAD)
 SENTRY_DESCRIBE=$(git describe --always --dirty)
 popd
 
+IMG_UTC_SECONDS=$(date --utc +%s)
+IMG_UTC_STR=$(date --date @$IMG_UTC_SECONDS +"%Y%02m%02dT%H%M%SZ")
+
 jq --null-input \
     --arg pi_gen_branch "$PI_GEN_BRANCH" \
     --arg pi_gen_commit "$PI_GEN_COMMIT" \
@@ -89,7 +92,9 @@ jq --null-input \
     --arg sentry_describe "$SENTRY_DESCRIBE" \
     --arg build_user "$BUILD_USER" \
     --arg build_host "$BUILD_HOST" \
-    '{ "build_user" : $build_user, "build_host" : $build_host, "pi_gen_branch" : $pi_gen_branch, "pi_gen_commit" : $pi_gen_commit, "pi_gen_describe" : $pi_gen_describe, "sentry_branch" : $sentry_branch, "sentry_commit" : $sentry_commit, "sentry_describe" : $sentry_describe }' > git.json
+    --arg build_time_utc_seconds "$IMG_UTC_SECONDS" \
+    --arg build_time_utc "$IMG_UTC_STR" \
+    '{ "build_time_utc_seconds": $build_time_utc_seconds, "build_time_utc" : $build_time_utc, "build_user" : $build_user, "build_host" : $build_host, "pi_gen_branch" : $pi_gen_branch, "pi_gen_commit" : $pi_gen_commit, "pi_gen_describe" : $pi_gen_describe, "sentry_branch" : $sentry_branch, "sentry_commit" : $sentry_commit, "sentry_describe" : $sentry_describe }' > git.json
 
 
 CONTAINER_EXISTS=$(${DOCKER} ps -a --filter name="${CONTAINER_NAME}" -q)
@@ -153,6 +158,13 @@ echo "copying results from deploy/"
 ${DOCKER} cp "${CONTAINER_NAME}":/pi-gen/deploy .
 
 ls -lah deploy
+
+if [ -x post-postrun.sh ]; then
+	log "Begin post-postrun.sh"
+	cd "${BASE_DIR}"
+	./post-postrun.sh
+	log "End post-postrun.sh"
+fi
 
 # cleanup
 if [ "${PRESERVE_CONTAINER}" != "1" ]; then
