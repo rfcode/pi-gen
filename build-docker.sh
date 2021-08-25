@@ -161,10 +161,7 @@ ${DOCKER} cp "${CONTAINER_NAME}":/pi-gen/deploy .
 ls -lah deploy
 
 if [ -x post-postrun.sh ]; then
-	log "Begin post-postrun.sh"
-	cd "${BASE_DIR}"
 	./post-postrun.sh
-	log "End post-postrun.sh"
 fi
 
 # cleanup
