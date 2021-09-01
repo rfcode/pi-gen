@@ -1,4 +1,4 @@
 [submodule "stage7/00-rootfs-overlay/Sentry"]
 	path = stage7/00-rootfs-overlay/Sentry
 	url = git@github.com:rfcode/Sentry.git
-	branch = release/0.9.0
+    branch = .
