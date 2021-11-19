@@ -73,10 +73,18 @@ mkdir -p $ROOTFS_DIR/mnt/usb
 mkdir -p $ROOTFS_DIR/data
 
 
+echo 'watchdog-device = /dev/watchdog' >> $ROOTFS_DIR/etc/watchdog.conf
+echo 'watchdog-timeout = 15' >> $ROOTFS_DIR/etc/watchdog.conf
+echo 'max-load-1 = 24' >> $ROOTFS_DIR/etc/watchdog.conf
+
 #
 # Enable services to run at bootup
 #
 on_chroot << EOF
+
+
+systemctl enable watchdog
+
 systemctl enable sentry-fixup.service
 
 #
