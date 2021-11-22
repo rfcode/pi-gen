@@ -24,3 +24,4 @@ monit
 jq
 dos2unix
 watchdog
+smbus2
